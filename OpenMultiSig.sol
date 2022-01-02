@@ -11,7 +11,6 @@ contract OpenMultiSig is MultiSig {
   //call MultiSig constructor
   constructor(uint[] memory _weights, address[] memory owners ,uint _thresh) payable MultiSig(_weights, owners, _thresh) {}
 
-
   mapping(uint => mapping(address => bool)) public appVoted; //keep track of who voted for which txn
 
   struct Application {
@@ -59,6 +58,7 @@ contract OpenMultiSig is MultiSig {
     uint _votesRequested,
     uint _proposedThresh
   ) public notOwner{
+    require(_proposedThresh<= thresh + _votesRequested, "impossible threshold"); //else eth locked forever
     apps.push(
       Application({
         applicant: msg.sender,
@@ -76,6 +76,7 @@ contract OpenMultiSig is MultiSig {
 
   event VoteApplication(address indexed voter, uint indexed appIndex, uint votes); //indexed so can be searched
 
+  //vote to approve applicant, everyone votes at most once
   function voteApplication(uint _appIndex)
     public
     onlyOwner
@@ -106,9 +107,10 @@ contract OpenMultiSig is MultiSig {
 
   event CompleteApplication(address indexed applicant, uint assigned_votes, uint paid);
 
+  //if enough votes, add participant
   function completeApplication(uint _appIndex) payable external appExists(_appIndex) appNotAccepted(_appIndex) {
     Application storage application = apps[_appIndex];
-    require(application.expiration>=block.timestamp,"application expired"); //price of eth might change
+    require(application.expiration>=block.timestamp,"application expired"); //price of eth might change so limit time for approval
     require(application.votes>=thresh,"insufficient votes");
     require(application.offer<=msg.value,"insufficient value");
     application.accepted=true;
