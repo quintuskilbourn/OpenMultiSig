@@ -3,7 +3,7 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 contract MultiSig  {
-  uint public thresh;    //threshold
+  uint public thresh;                                     //threshold
   uint public totalWeight;  
   mapping(address=>uint) public weights;
   mapping(uint => mapping(address => bool)) public voted; //keep track of who voted for which txn
@@ -41,20 +41,20 @@ contract MultiSig  {
   }
 
 
-  constructor(uint[] memory _weights, address[] memory owners ,uint _thresh) payable {
+  constructor(uint[] memory _weights, address[] memory owners ,uint _thresh) payable { 
 
     require(_weights.length==owners.length,"weights and owners do not match");
-    require(_weights.length > 0, "owners required"); //also catches the case when owners.length==0
+    require(_weights.length > 0, "owners required");         //also catches the case when owners.length==0
     require(_thresh > 0, "invalid threshold");
     
     for (uint i = 0; i < _weights.length; i++) {
       require(owners[i] != address(0), "invalid owner");
-      require(weights[owners[i]]==0, "owner not unique"); //already assigned weight
+      require(weights[owners[i]]==0, "owner not unique");    //already assigned weight
       totalWeight += _weights[i];
       weights[owners[i]] = _weights[i];
     }
-    //now we have a fraction of votes assigned to each member of multisig
-    require(_thresh <= totalWeight, "impossible threshold");
+    
+    require(_thresh <= totalWeight, "impossible threshold"); //otherwise eth locked forever
     thresh = _thresh;
   }
 
@@ -63,9 +63,11 @@ contract MultiSig  {
   receive() external payable {
     emit Deposit(msg.sender, msg.value, address(this).balance);
   }
+  
   //
   //transaction submission, voting and execution flow below
   //
+  
   event SubmitTransaction(
     address indexed owner,
     uint indexed txIndex,
@@ -124,6 +126,7 @@ contract MultiSig  {
   }
 
   //not executing right after votes surpass thresh because of gas costs
+  
   event ExecuteTransaction(address indexed owner, uint indexed txIndex);
   function executeTransaction(uint _txIndex)
     public
@@ -145,6 +148,7 @@ contract MultiSig  {
   //
   //everything below is just basic getters
   //
+  
   function getTransactionCount() public view returns (uint) {
     return transactions.length;
   }
