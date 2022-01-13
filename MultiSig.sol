@@ -3,18 +3,18 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 contract MultiSig  {
-  uint public thresh;                                     //threshold
+  uint128 public thresh;         //threshold; kept small for inheriting contracts that may store 
   uint public totalWeight;  
-  mapping(address=>uint) public weights;
+  mapping(address=>uint96) public weights;
   mapping(uint => mapping(address => bool)) public voted; //keep track of who voted for which txn
 
 
   struct Transaction {
     address to;
-    uint value;
-    bytes data;
+    uint96 value; //to and value fill one 256 bit slot
     bool executed;
-    uint votes;  //how many tokens have voted for this
+    uint96 votes;  //how many tokens have voted for this
+    bytes data;
   }
 
   Transaction[] public transactions; 
@@ -41,7 +41,7 @@ contract MultiSig  {
   }
 
 
-  constructor(uint[] memory _weights, address[] memory owners ,uint _thresh) payable { 
+  constructor(uint96[] memory _weights, address[] memory owners ,uint128 _thresh) payable { 
 
     require(_weights.length==owners.length,"weights and owners do not match");
     require(_weights.length > 0, "owners required");         //also catches the case when owners.length==0
@@ -69,17 +69,16 @@ contract MultiSig  {
   //
   
   event SubmitTransaction(
-    address indexed owner,
     uint indexed txIndex,
     address indexed to,
-    uint value,
-    uint votes,
+    uint96 value,
+    uint96 votes,
     bytes data
   );
 
   function submitTransaction(
     address _to,
-    uint _value,
+    uint96 _value,
     bytes memory _data
   ) public onlyOwner {
     transactions.push(
@@ -92,7 +91,7 @@ contract MultiSig  {
       })
     );
     voted[transactions.length-1][msg.sender] = true;
-    emit SubmitTransaction(msg.sender, transactions.length-1, _to, _value, weights[msg.sender],_data);
+    emit SubmitTransaction(transactions.length-1, _to, _value, weights[msg.sender],_data);
   }
 
   event TransactionVote(address indexed owner, uint indexed txIndex, uint votes); //indexed so can be searched
@@ -175,4 +174,3 @@ contract MultiSig  {
     );
   }
 }
-
